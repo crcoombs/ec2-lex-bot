@@ -15,9 +15,11 @@ try:
     DECRYPTED_SECRET_KEY = boto3.client('kms').decrypt(CiphertextBlob=b64decode(ENCRYPTED_SECRET_KEY))['Plaintext'].decode("utf-8")
 
     ec2 = boto3.resource('ec2', aws_access_key_id=DECRYPTED_ACCESS_KEY, aws_secret_access_key=DECRYPTED_SECRET_KEY)
-except ClientError,KeyError as ex:
+except ClientError as ex:
     if ex.response['Error']['Code'] == 'InvalidCiphertextException':
         ec2 = boto3.resource('ec2')
+except KeyError:
+    ec2 = boto3.resource('ec2')
 
 def get_num_instances():
     running_filter = {'Name': 'instance-state-name', 'Values': ['running']}
@@ -37,7 +39,11 @@ def get_num_instances():
     return output
 
 def lambda_handler(event, context):
+    output = None
     if event["currentIntent"]["name"] == "RunningInstances":
         output = get_num_instances()
-    return output
+    if output is not None:
+        return output
+    else:
+        return 'Error'
 
