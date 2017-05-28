@@ -1,5 +1,5 @@
 import unittest
-import ec2_lex_bot
+import lambda_function
 import re
 
 class TestReadFunctions(unittest.TestCase):
