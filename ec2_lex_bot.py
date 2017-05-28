@@ -38,10 +38,36 @@ def get_num_instances():
     print (output)
     return output
 
+def get_instance_status():
+    status = []
+    instances = ec2.instances.filter(InstanceIds=[])
+    for instance in instances:
+        if instance.platform:
+            platform = instance.platform
+        else:
+            platform = 'Linux'
+        status.append("{0}, a {1} instance, is currently {2}.".format(instance.id, platform, instance.state["Name"]))
+        
+    output = {
+                "dialogAction": {
+                    "type": "Close",
+                    "fulfillmentState": "Fulfilled",
+                    "message": {
+                        "contentType": "PlainText",
+                        "content": ''.join(status)
+                    }
+                }
+            }    
+    print (output)
+    return output
+
 def lambda_handler(event, context):
     output = None
     if event["currentIntent"]["name"] == "RunningInstances":
         output = get_num_instances()
+    elif event["currentIntent"]["name"] == "InstanceStatus":
+        output = get_instance_status()
+        
     if output is not None:
         return output
     else:
