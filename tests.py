@@ -33,14 +33,14 @@ class TestReadFunctions(unittest.TestCase):
 
     def test_num_instances(self):
         self.mock_event["currentIntent"]["name"] = "RunningInstances"
-        output = ec2_lex_bot.lambda_handler(self.mock_event, None)
+        output = lambda_function.lambda_handler(self.mock_event, None)
         regex = re.compile('There are [1-9]\d* instances running\.')
         match = regex.match(output["dialogAction"]["message"]["content"])
         self.assertIsNotNone(match)
 
     def test_instance_status(self):
         self.mock_event["currentIntent"]["name"] = "InstanceStatus"
-        output = ec2_lex_bot.lambda_handler(self.mock_event, None)
+        output = lambda_function.lambda_handler(self.mock_event, None)
         regex = re.compile('(i-[a-f0-9]{8,}, a (Windows|Linux) instance, is currently (pending|running|shutting down|terminated|stopping|stopped)\.)+')
         match = regex.match(output["dialogAction"]["message"]["content"])
         self.assertIsNotNone(match)
