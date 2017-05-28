@@ -45,5 +45,5 @@ def lambda_handler(event, context):
     if output is not None:
         return output
     else:
-        return 'Error'
+        return None
 
