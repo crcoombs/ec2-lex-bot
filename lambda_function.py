@@ -21,22 +21,37 @@ except ClientError as ex:
 except KeyError:
     ec2 = boto3.resource('ec2')
 
+def generate_response(response_data):
+    output = {
+        "dialogAction": {
+            "type": None,
+            "message": {
+                "contentType": "PlainText",
+                "content": None
+            },
+           "intentName": None,
+           "slots": None 
+        }
+    }
+    
+    for field in response_data.keys():
+        if field in ("type", "intentName", "slots"):
+            output["dialogAction"][field] = response_data[field]
+        elif field == "content":
+            output["dialogAction"]["message"]["content"] = response_data[field]
+    print (output)
+    return output
+
 def get_num_instances():
     running_filter = {'Name': 'instance-state-name', 'Values': ['running']}
     instances = ec2.instances.filter(Filters=[running_filter])
     running_instances = [instance.id for instance in instances]
-    output = {
-                "dialogAction": {
-                    "type": "Close",
-                    "fulfillmentState": "Fulfilled",
-                    "message": {
-                        "contentType": "PlainText",
-                        "content": "There are {0} instances running.".format(len(running_instances))
-                    }
-                }
-            }    
-    print (output)
-    return output
+    response_data = {
+        "type": "Close",
+        "fulfillmentState": "Fulfilled",
+        "content": "There are {0} instances running.".format(len(running_instances))
+    }
+    return generate_response(response_data)
 
 def get_instance_status():
     status = []
@@ -47,19 +62,12 @@ def get_instance_status():
         else:
             platform = 'Linux'
         status.append("{0}, a {1} instance, is currently {2}.".format(instance.id, platform, instance.state["Name"]))
-        
-    output = {
-                "dialogAction": {
-                    "type": "Close",
-                    "fulfillmentState": "Fulfilled",
-                    "message": {
-                        "contentType": "PlainText",
-                        "content": ''.join(status)
-                    }
-                }
-            }    
-    print (output)
-    return output
+    response_data = {
+        "type": "Close",
+        "fulfillmentState": "Fulfilled",
+        "content": ''.join(status)
+    }    
+    return generate_response(response_data)
 
 def lambda_handler(event, context):
     output = None
