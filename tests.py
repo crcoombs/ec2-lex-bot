@@ -31,15 +31,29 @@ class TestReadFunctions(unittest.TestCase):
     def test_num_instances(self):
         self.mock_event["currentIntent"]["name"] = "RunningInstances"
         output = lambda_function.lambda_handler(self.mock_event, None)
-        regex = re.compile(r'There are [1-9]\d* instances running\.')
+        regex = re.compile(r'There are [0-9]\d* instances running\.')
         match = regex.match(output["dialogAction"]["message"]["content"])
         self.assertIsNotNone(match)
 
     def test_instance_status(self):
         self.mock_event["currentIntent"]["name"] = "InstanceStatus"
         output = lambda_function.lambda_handler(self.mock_event, None)
-        regex = re.compile(r'(i-[a-f0-9]{8,}, a (Windows|Linux) instance, is currently (pending|running|shutting down|terminated|stopping|stopped)\.)+')
+        regex = re.compile(r'(i-[a-f0-9]{8,}, a (Windows|Linux) instance, is currently (pending|running|shutting down|terminated|stopping|stopped)\. )+')
         match = regex.match(output["dialogAction"]["message"]["content"])
+        self.assertIsNotNone(match)
+
+    def test_shutdown_reason(self):
+        self.mock_event["currentIntent"]["name"] = "ShutdownReason"
+        self.mock_event["currentIntent"]["slots"] = {"instance_id: i-08ef48460a83ae3cf"}
+        output = lambda_function.lambda_handler(self.mock_event, None)
+        success = re.compile(r'The reason for the shutdown was: .*\. It happened on \d{4}-\d{2}-\d{2} at \d{2}:\d{2}:\d{2}\.')
+        fail = re.compile(r'This instance is currntly running, so there\'s no information.')
+        success_match = success.match(output["dialogAction"]["message"]["content"])
+        fail_match = fail.match(output["dialogAction"]["message"]["content"])
+        if success_match is not None or fail_match is not None:
+            match = True
+        else:
+            match = None
         self.assertIsNotNone(match)
 
 if __name__ == '__main__':

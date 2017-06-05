@@ -24,7 +24,7 @@ def generate_response(response_data):
             "type": None,
             "message": {
                 "contentType": "PlainText",
-                "content": None
+                "content": ''
             },
             "intentName": None,
             "slots": None
@@ -52,13 +52,14 @@ def get_num_instances():
 
 def get_instance_status():
     status = []
+    #InstanceIDs=[] gets all instances
     instances = EC2.instances.filter(InstanceIds=[])
     for instance in instances:
         if instance.platform:
-            platform = instance.platform
+            platform = instance.platform.capitalize()
         else:
             platform = 'Linux'
-        status.append("{0}, a {1} instance, is currently {2}.".format(instance.id, platform, instance.state["Name"]))
+        status.append("{0}, a {1} instance, is currently {2}. ".format(instance.id, platform, instance.state["Name"]))
 
     response_data = {
         "type": "Close",
@@ -77,4 +78,4 @@ def lambda_handler(event, context):
     if output is not None:
         return output
     else:
-        return None
+        return generate_response({})
