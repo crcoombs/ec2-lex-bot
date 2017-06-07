@@ -1,5 +1,4 @@
 import os
-import re
 from base64 import b64decode
 import boto3
 from botocore.exceptions import ClientError
@@ -94,7 +93,7 @@ def get_shutdown_reason(instance_id):
         date, time, zone = time_string.split()
         response_data["content"] = "The reason for the shutdown was: {0}. It happened on {1} at {2} {3}.".format(reason, date, time, zone)
         return generate_response(response_data)
-    
+
 def lambda_handler(event, context):
     output = None
     if event["currentIntent"]["name"] == "RunningInstances":
