@@ -1,4 +1,5 @@
 import os
+import re
 from base64 import b64decode
 import boto3
 from botocore.exceptions import ClientError
@@ -68,12 +69,41 @@ def get_instance_status():
     }
     return generate_response(response_data)
 
+def get_shutdown_reason(instance_id):
+    response_data = {
+        "type": "Close",
+        "fulfillmentState": "Fulfilled",
+        "content": ''
+    }
+    instance = EC2.Instance(instance_id)
+    try:
+        transition_string = instance.state_transition_reason
+    except ClientError as ex:
+        if ex.response['Error']['Code'] == 'InvalidInstanceID.NotFound' or ex.response['Error']['Code'] == 'InvalidInstanceID.Malformed':
+            response_data["content"] = "I'm sorry, there's no instance by that name."
+            return generate_response(response_data)
+        else:
+            print(ex.response['Error']['Code'])
+            return None
+    if transition_string is None:
+        response_data["content"] = "This instance is currntly running, so there's no information."
+        return generate_response(response_data)
+    else:
+        reason, time_string = transition_string.split('(')
+        reason = reason.strip()
+        time_string = time_string.replace(')', '')
+        date, time, zone = time_string.split()
+        response_data["content"] = "The reason for the shutdown was: {0}. It happened on {1} at {2} {3}.".format(reason, date, time, zone)
+        return generate_response(response_data)
+    
 def lambda_handler(event, context):
     output = None
     if event["currentIntent"]["name"] == "RunningInstances":
         output = get_num_instances()
     elif event["currentIntent"]["name"] == "InstanceStatus":
         output = get_instance_status()
+    elif event["currentIntent"]["name"] == "ShutdownReason":
+        output = get_shutdown_reason(event["currentIntent"]["slots"]["instance_id"])
 
     if output is not None:
         return output
