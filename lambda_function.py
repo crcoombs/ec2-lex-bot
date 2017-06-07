@@ -22,13 +22,12 @@ except KeyError:
 def generate_response(response_data):
     output = {
         "dialogAction": {
-            "type": None,
+            "type": '',
+            "fulfillmentState": "Fulfilled",
             "message": {
                 "contentType": "PlainText",
                 "content": ''
-            },
-            "intentName": None,
-            "slots": None
+            }
         }
     }
 
@@ -85,7 +84,7 @@ def get_shutdown_reason(instance_id):
         else:
             print(ex.response['Error']['Code'])
             return None
-    if transition_string is None:
+    if transition_string == '':
         response_data["content"] = "This instance is currntly running, so there's no information."
         return generate_response(response_data)
     else:
