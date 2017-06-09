@@ -106,20 +106,21 @@ def get_shutdown_reason(instance_id):
 
 def lambda_handler(event, context):
     output = None
+    print(event)
     if event["currentIntent"]["name"] == "RunningInstances":
         output = get_num_instances()
     elif event["currentIntent"]["name"] == "InstanceStatus":
         output = get_instance_status()
     elif event["currentIntent"]["name"] == "ShutdownReason":
-        try:
-            id = event["currentIntent"]["slots"]["instance_id"]
-        except KeyError:
+        id = event["currentIntent"]["slots"]["instance_id"]
+        if id is None:
             short_code = event["currentIntent"]["slots"]["short_code"]
             id = event["sessionAttributes"][short_code]
         output = get_shutdown_reason(id)
 
     if output is not None:
-        output["sessionAttributes"] = event["sessionAttributes"]
+        if "sessionAttributes" not in output:
+            output["sessionAttributes"] = event["sessionAttributes"]
         return generate_response(output)
     else:
         return generate_response({})

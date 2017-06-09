@@ -66,7 +66,7 @@ class TestReadFunctions(unittest.TestCase):
     
     def test_shutdown_reason_short_code(self):
         self.mock_event["currentIntent"]["name"] = "ShutdownReason"
-        self.mock_event["currentIntent"]["slots"] = {"short_code": "1"}
+        self.mock_event["currentIntent"]["slots"] = {"instance_id": None, "short_code": "1"}
         self.mock_event["sessionAttributes"] = {"1": "i-08ef48460a83ae3cf"}
         output = lambda_function.lambda_handler(self.mock_event, None)
         success = re.compile(r'The reason for the shutdown was: .*\. It happened on \d{4}-\d{2}-\d{2} at \d{2}:\d{2}:\d{2} \w{3}\.')
