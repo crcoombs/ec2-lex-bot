@@ -1,3 +1,4 @@
+#TODO: No instance error handling in status
 import os
 from base64 import b64decode
 import boto3
@@ -22,7 +23,7 @@ def generate_response(response_data):
     output = {
         "dialogAction": {
             "type": '',
-            "fulfillmentState": "Fulfilled",
+            "fulfillmentState": '',
             "message": {
                 "contentType": "PlainText",
                 "content": ''
@@ -31,10 +32,13 @@ def generate_response(response_data):
     }
 
     for field in response_data.keys():
-        if field in ("type", "intentName", "slots"):
+        if field in ("type", "fulfillmentState", "slots"):
             output["dialogAction"][field] = response_data[field]
         elif field == "content":
             output["dialogAction"]["message"]["content"] = response_data[field]
+        else:
+            output[field] = response_data[field]
+
     print(output)
     return output
 
@@ -47,25 +51,31 @@ def get_num_instances():
         "fulfillmentState": "Fulfilled",
         "content": "There are {0} instances running.".format(len(running_instances))
     }
-    return generate_response(response_data)
+    return response_data
 
 def get_instance_status():
     status = []
+    index = 0
+    sessionAttributes = {}
     #InstanceIDs=[] gets all instances
     instances = EC2.instances.filter(InstanceIds=[])
     for instance in instances:
+        index += 1
+        sessionAttributes[index] = instance.id
         if instance.platform:
             platform = instance.platform.capitalize()
         else:
             platform = 'Linux'
-        status.append("{0}, a {1} instance, is currently {2}. ".format(instance.id, platform, instance.state["Name"]))
+        status.append("No. {0}: id {1}, a {2} instance, is currently {3}. ".format(index, instance.id, platform, instance.state["Name"]))
 
     response_data = {
         "type": "Close",
         "fulfillmentState": "Fulfilled",
         "content": ''.join(status)
     }
-    return generate_response(response_data)
+    if index > 0:
+        response_data["sessionAttributes"] = sessionAttributes
+    return response_data
 
 def get_shutdown_reason(instance_id):
     response_data = {
@@ -79,20 +89,20 @@ def get_shutdown_reason(instance_id):
     except ClientError as ex:
         if ex.response['Error']['Code'] == 'InvalidInstanceID.NotFound' or ex.response['Error']['Code'] == 'InvalidInstanceID.Malformed':
             response_data["content"] = "I'm sorry, there's no instance by that name."
-            return generate_response(response_data)
+            return response_data
         else:
             print(ex.response['Error']['Code'])
             return None
     if transition_string == '':
         response_data["content"] = "This instance is currntly running, so there's no information."
-        return generate_response(response_data)
+        return response_data
     else:
         reason, time_string = transition_string.split('(')
         reason = reason.strip()
         time_string = time_string.replace(')', '')
         date, time, zone = time_string.split()
         response_data["content"] = "The reason for the shutdown was: {0}. It happened on {1} at {2} {3}.".format(reason, date, time, zone)
-        return generate_response(response_data)
+        return response_data
 
 def lambda_handler(event, context):
     output = None
@@ -101,9 +111,15 @@ def lambda_handler(event, context):
     elif event["currentIntent"]["name"] == "InstanceStatus":
         output = get_instance_status()
     elif event["currentIntent"]["name"] == "ShutdownReason":
-        output = get_shutdown_reason(event["currentIntent"]["slots"]["instance_id"])
+        try:
+            id = event["currentIntent"]["slots"]["instance_id"]
+        except KeyError:
+            short_code = event["currentIntent"]["slots"]["short_code"]
+            id = event["sessionAttributes"][short_code]
+        output = get_shutdown_reason(id)
 
     if output is not None:
-        return output
+        output["sessionAttributes"] = event["sessionAttributes"]
+        return generate_response(output)
     else:
         return generate_response({})
