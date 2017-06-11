@@ -104,19 +104,70 @@ def get_shutdown_reason(instance_id):
         response_data["content"] = "The reason for the shutdown was: {0}. It happened on {1} at {2} {3}.".format(reason, date, time, zone)
         return response_data
 
+def start_instance(instance_id):
+    response_data = {
+        "type": "Close",
+        "fulfillmentState": "Fulfilled",
+        "content": ''
+    }
+    instance = EC2.Instance(instance_id)
+    try:
+        if instance.state["Code"] in (0, 16):
+            response_data["content"] = "This instance is already running."
+            return response_data
+        result = instance.start()
+    except ClientError as ex:
+        if ex.response['Error']['Code'] == 'InvalidInstanceID.NotFound' or ex.response['Error']['Code'] == 'InvalidInstanceID.Malformed':
+            response_data["content"] = "I'm sorry, there's no instance by that name."
+            return response_data
+        else:
+            print(ex.response['Error']['Code'])
+            return None
+    response_data["content"] = "The instance has been started."
+    return response_data
+
+def stop_instance(instance_id):
+    response_data = {
+        "type": "Close",
+        "fulfillmentState": "Fulfilled",
+        "content": ''
+    }
+    instance = EC2.Instance(instance_id)
+    try:
+        if instance.state["Code"] in (32, 64, 80):
+            response_data["content"] = "This instance is already stopped."
+            return response_data
+        result = instance.stop()
+    except ClientError as ex:
+        if ex.response['Error']['Code'] == 'InvalidInstanceID.NotFound' or ex.response['Error']['Code'] == 'InvalidInstanceID.Malformed':
+            response_data["content"] = "I'm sorry, there's no instance by that name."
+            return response_data
+        else:
+            print(ex.response['Error']['Code'])
+            return None
+    response_data["content"] = "The instance has been stopped."
+    return response_data
+
 def lambda_handler(event, context):
     output = None
+    try:
+        id = event["currentIntent"]["slots"]["instance_id"]
+            if id is None:
+                short_code = event["currentIntent"]["slots"]["short_code"]
+                id = event["sessionAttributes"][short_code]
+    except KeyError:
+        pass
     print(event)
     if event["currentIntent"]["name"] == "RunningInstances":
         output = get_num_instances()
     elif event["currentIntent"]["name"] == "InstanceStatus":
         output = get_instance_status()
-    elif event["currentIntent"]["name"] == "ShutdownReason":
-        id = event["currentIntent"]["slots"]["instance_id"]
-        if id is None:
-            short_code = event["currentIntent"]["slots"]["short_code"]
-            id = event["sessionAttributes"][short_code]
+    elif event["currentIntent"]["name"] == "ShutdownReason": 
         output = get_shutdown_reason(id)
+    elif event["currentIntent"]["name"] == "StartInstance":
+        output = start_instance(id)
+    elif event["currentIntent"]["name"] == "StopInstance":
+        output = stop_instance(id)
 
     if output is not None:
         if "sessionAttributes" not in output:
