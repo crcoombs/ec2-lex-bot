@@ -151,10 +151,10 @@ def stop_instance(instance_id):
 def lambda_handler(event, context):
     output = None
     try:
-        id = event["currentIntent"]["slots"]["instance_id"]
-            if id is None:
-                short_code = event["currentIntent"]["slots"]["short_code"]
-                id = event["sessionAttributes"][short_code]
+        instance_id = event["currentIntent"]["slots"]["instance_id"]
+        if instance_id is None:
+            short_code = event["currentIntent"]["slots"]["short_code"]
+            instance_id = event["sessionAttributes"][short_code]
     except KeyError:
         pass
     print(event)
@@ -162,10 +162,10 @@ def lambda_handler(event, context):
         output = get_num_instances()
     elif event["currentIntent"]["name"] == "InstanceStatus":
         output = get_instance_status()
-    elif event["currentIntent"]["name"] == "ShutdownReason": 
-        output = get_shutdown_reason(id)
+    elif event["currentIntent"]["name"] == "ShutdownReason":
+        output = get_shutdown_reason(instance_id)
     elif event["currentIntent"]["name"] == "StartInstance":
-        output = start_instance(id)
+        output = start_instance(instance_id)
     elif event["currentIntent"]["name"] == "StopInstance":
         output = stop_instance(id)
 
