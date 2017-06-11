@@ -78,6 +78,34 @@ class TestReadFunctions(unittest.TestCase):
         else:
             match = None
         self.assertIsNotNone(match)
+    
+    def test_stop_instance(self):
+        self.mock_event["currentIntent"]["name"] = "StopInstance"
+        self.mock_event["currentIntent"]["slots"] = {"instance_id": "i-08ef48460a83ae3cf"}
+        output = lambda_function.lambda_handler(self.mock_event, None)
+        success = re.compile(r'The instance is stopping\.')
+        fail = re.compile(r'This instance is already stopped\.')
+        success_match = success.match(output["dialogAction"]["message"]["content"])
+        fail_match = fail.match(output["dialogAction"]["message"]["content"])
+        if success_match is not None or fail_match is not None:
+            match = True
+        else:
+            match = None
+        self.assertIsNotNone(match)
+    
+    def test_start_instance(self):
+        self.mock_event["currentIntent"]["name"] = "StartInstance"
+        self.mock_event["currentIntent"]["slots"] = {"instance_id": "i-08ef48460a83ae3cf"}
+        output = lambda_function.lambda_handler(self.mock_event, None)
+        success = re.compile(r'The instance is starting\.')
+        fail = re.compile(r'This instance is already running\.')
+        success_match = success.match(output["dialogAction"]["message"]["content"])
+        fail_match = fail.match(output["dialogAction"]["message"]["content"])
+        if success_match is not None or fail_match is not None:
+            match = True
+        else:
+            match = None
+        self.assertIsNotNone(match)
 
 if __name__ == '__main__':
     unittest.main()
