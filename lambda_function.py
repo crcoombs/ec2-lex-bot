@@ -71,7 +71,7 @@ def get_instance_status():
             platform = 'Linux'
         status.append("No. {0}: id {1}, a {2} instance, is currently {3}. ".format(index, instance.id, platform, instance.state["Name"]))
     if index == 0:
-        response_data["content"]  = "There are no existing instances."
+        response_data["content"] = "There are no existing instances."
     else:
         response_data["content"] = ''.join(status)
     return response_data
@@ -86,7 +86,7 @@ def get_shutdown_reason(instance_id):
     try:
         transition_string = instance.state_transition_reason
     except ClientError as ex:
-        if ex.response['Error']['Code'] == 'InvalidInstanceID.NotFound' or ex.response['Error']['Code'] == 'InvalidInstanceID.Malformed':
+        if ex.response['Error']['Code'] in ('InvalidInstanceID.NotFound', 'InvalidInstanceID.Malformed'):
             response_data["content"] = "I'm sorry, there's no instance by that name."
             return response_data
         print(ex.response['Error']['Code'])
@@ -118,7 +118,7 @@ def start_instance(instance_id):
             response_data["content"] = "Unhanded state: {0}".format(instance.state["Code"])
             return response_data
     except ClientError as ex:
-        if ex.response['Error']['Code'] == 'InvalidInstanceID.NotFound' or ex.response['Error']['Code'] == 'InvalidInstanceID.Malformed':
+        if ex.response['Error']['Code'] in ('InvalidInstanceID.NotFound', 'InvalidInstanceID.Malformed'):
             response_data["content"] = "I'm sorry, there's no instance by that name."
             return response_data
         print(ex.response['Error']['Code'])
@@ -144,7 +144,7 @@ def stop_instance(instance_id):
             response_data["content"] = "Unhanded state: {0}".format(instance.state["Code"])
             return response_data
     except ClientError as ex:
-        if ex.response['Error']['Code'] == 'InvalidInstanceID.NotFound' or ex.response['Error']['Code'] == 'InvalidInstanceID.Malformed':
+        if ex.response['Error']['Code'] in ('InvalidInstanceID.NotFound', 'InvalidInstanceID.Malformed'):
             response_data["content"] = "I'm sorry, there's no instance by that name."
             return response_data
         print(ex.response['Error']['Code'])
