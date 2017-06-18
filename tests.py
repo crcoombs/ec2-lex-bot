@@ -63,7 +63,7 @@ class TestReadFunctions(unittest.TestCase):
         regex = re.compile(r'I\'m sorry, there\'s no instance by that name\.')
         match = regex.match(output["dialogAction"]["message"]["content"])
         self.assertIsNotNone(match)
-    
+
     def test_shutdown_reason_short_code(self):
         self.mock_event["currentIntent"]["name"] = "ShutdownReason"
         self.mock_event["currentIntent"]["slots"] = {"instance_id": None, "short_code": "1"}
@@ -78,7 +78,15 @@ class TestReadFunctions(unittest.TestCase):
         else:
             match = None
         self.assertIsNotNone(match)
-    
+
+    def test_invalid_short_code(self):
+        self.mock_event["currentIntent"]["name"] = "ShutdownReason"
+        self.mock_event["currentIntent"]["slots"] = {"instance_id": None, "short_code": "0"}
+        output = lambda_function.lambda_handler(self.mock_event, None)
+        regex = re.compile(r'I\'m sorry, that ID is invalid\.')
+        match = regex.match(output["dialogAction"]["message"]["content"])
+        self.assertIsNotNone(match)
+
     def test_stop_instance(self):
         self.mock_event["currentIntent"]["name"] = "StopInstance"
         self.mock_event["currentIntent"]["slots"] = {"instance_id": "i-08ef48460a83ae3cf"}
@@ -92,7 +100,7 @@ class TestReadFunctions(unittest.TestCase):
         else:
             match = None
         self.assertIsNotNone(match)
-    
+
     def test_start_instance(self):
         self.mock_event["currentIntent"]["name"] = "StartInstance"
         self.mock_event["currentIntent"]["slots"] = {"instance_id": "i-08ef48460a83ae3cf"}
