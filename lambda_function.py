@@ -1,4 +1,3 @@
-#TODO: No instance error handling in status
 import os
 from base64 import b64decode
 import boto3
@@ -23,7 +22,6 @@ def generate_response(response_data):
     output = {
         "dialogAction": {
             "type": '',
-            "fulfillmentState": '',
             "message": {
                 "contentType": "PlainText",
                 "content": ''
@@ -72,7 +70,10 @@ def get_instance_status():
         else:
             platform = 'Linux'
         status.append("No. {0}: id {1}, a {2} instance, is currently {3}. ".format(index, instance.id, platform, instance.state["Name"]))
-    response_data["content"] = ''.join(status)
+    if index == 0:
+        response_data["content"]  = "There are no existing instances."
+    else:
+        response_data["content"] = ''.join(status)
     return response_data
 
 def get_shutdown_reason(instance_id):
@@ -153,29 +154,31 @@ def stop_instance(instance_id):
     return response_data
 
 def lambda_handler(event, context):
-    output = None
+    response_data = {}
+    print(event)
     try:
         instance_id = event["currentIntent"]["slots"]["instance_id"]
         if instance_id is None:
             short_code = event["currentIntent"]["slots"]["short_code"]
             instance_id = event["sessionAttributes"][short_code]
-    except KeyError:
-        pass
-    print(event)
-    if event["currentIntent"]["name"] == "RunningInstances":
-        output = get_num_instances()
-    elif event["currentIntent"]["name"] == "InstanceStatus":
-        output = get_instance_status()
-    elif event["currentIntent"]["name"] == "ShutdownReason":
-        output = get_shutdown_reason(instance_id)
-    elif event["currentIntent"]["name"] == "StartInstance":
-        output = start_instance(instance_id)
-    elif event["currentIntent"]["name"] == "StopInstance":
-        output = stop_instance(instance_id)
+    except (KeyError, TypeError):
+        if  event["currentIntent"]["name"] not in ("RunningInstances", "InstanceStatus"):
+            response_data["type"] = "Close"
+            response_data["fulfillmentState"] = "Failed"
+            response_data["content"] = "I'm sorry, that ID is invalid."
+            return generate_response(response_data)
 
-    if output is not None:
-        if "sessionAttributes" not in output:
-            output["sessionAttributes"] = event["sessionAttributes"]
-        return generate_response(output)
-    else:
-        return generate_response({})
+    if event["currentIntent"]["name"] == "RunningInstances":
+        response_data = get_num_instances()
+    elif event["currentIntent"]["name"] == "InstanceStatus":
+        response_data = get_instance_status()
+    elif event["currentIntent"]["name"] == "ShutdownReason":
+        response_data = get_shutdown_reason(instance_id)
+    elif event["currentIntent"]["name"] == "StartInstance":
+        response_data = start_instance(instance_id)
+    elif event["currentIntent"]["name"] == "StopInstance":
+        response_data = stop_instance(instance_id)
+
+    if "sessionAttributes" not in response_data:
+        response_data["sessionAttributes"] = event["sessionAttributes"]
+    return generate_response(response_data)
