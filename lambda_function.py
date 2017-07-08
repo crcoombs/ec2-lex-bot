@@ -153,20 +153,35 @@ def stop_instance(instance_id):
         response_data["content"] = "The instance is stopping."
     return response_data
 
+def list_functions():
+    response_data = {
+        "type": "Close",
+        "fulfillmentState": "Fulfilled",
+        "content": ''
+    }
+    response_data["content"] = '''I can:
+            Tell you the number of running instances
+            Tell you the current state of all your instances
+            Tell you the reason for an instance being stopped
+            Start a stopped instance
+            Stop a running instance'''
+    return response_data
+
 def lambda_handler(event, context):
     response_data = {}
     print(event)
-    try:
-        instance_id = event["currentIntent"]["slots"]["instance_id"]
-        if instance_id is None:
+
+    if event["currentIntent"]["name"] in ("ShutdownReason", "StartInstance", "StopInstance"):
+        try:
+            instance_id = event["currentIntent"]["slots"]["instance_id"]
             short_code = event["currentIntent"]["slots"]["short_code"]
-            instance_id = event["sessionAttributes"][short_code]
-    except (KeyError, TypeError):
-        if  event["currentIntent"]["name"] not in ("RunningInstances", "InstanceStatus"):
-            response_data["type"] = "Close"
-            response_data["fulfillmentState"] = "Failed"
-            response_data["content"] = "I'm sorry, that ID is invalid."
-            return generate_response(response_data)
+            if short_code:
+                instance_id = event["sessionAttributes"][short_code]
+        except KeyError:
+                response_data["type"] = "Close"
+                response_data["fulfillmentState"] = "Failed"
+                response_data["content"] = "I'm sorry, that ID is invalid."
+                return generate_response(response_data)
 
     if event["currentIntent"]["name"] == "RunningInstances":
         response_data = get_num_instances()
@@ -178,6 +193,8 @@ def lambda_handler(event, context):
         response_data = start_instance(instance_id)
     elif event["currentIntent"]["name"] == "StopInstance":
         response_data = stop_instance(instance_id)
+    elif event["currentIntent"]["name"] == "Discovery":
+        response_data = list_functions()
 
     if "sessionAttributes" not in response_data:
         response_data["sessionAttributes"] = event["sessionAttributes"]

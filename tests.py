@@ -44,7 +44,7 @@ class TestReadFunctions(unittest.TestCase):
 
     def test_shutdown_reason(self):
         self.mock_event["currentIntent"]["name"] = "ShutdownReason"
-        self.mock_event["currentIntent"]["slots"] = {"instance_id": "i-08ef48460a83ae3cf"}
+        self.mock_event["currentIntent"]["slots"] = {"instance_id": "i-08ef48460a83ae3cf", "short_code": None}
         output = lambda_function.lambda_handler(self.mock_event, None)
         success = re.compile(r'The reason for the shutdown was: .*\. It happened on \d{4}-\d{2}-\d{2} at \d{2}:\d{2}:\d{2} \w{3}\.')
         fail = re.compile(r'This instance is currntly running, so there\'s no information.')
@@ -58,7 +58,7 @@ class TestReadFunctions(unittest.TestCase):
 
     def test_shutdown_reason_bad_id(self):
         self.mock_event["currentIntent"]["name"] = "ShutdownReason"
-        self.mock_event["currentIntent"]["slots"] = {"instance_id": "ec2.delete_insatnces()"}
+        self.mock_event["currentIntent"]["slots"] = {"instance_id": "deadbeef", "short_code": None}
         output = lambda_function.lambda_handler(self.mock_event, None)
         regex = re.compile(r'I\'m sorry, there\'s no instance by that name\.')
         match = regex.match(output["dialogAction"]["message"]["content"])
@@ -89,7 +89,7 @@ class TestReadFunctions(unittest.TestCase):
 
     def test_stop_instance(self):
         self.mock_event["currentIntent"]["name"] = "StopInstance"
-        self.mock_event["currentIntent"]["slots"] = {"instance_id": "i-08ef48460a83ae3cf"}
+        self.mock_event["currentIntent"]["slots"] = {"instance_id": "i-08ef48460a83ae3cf", "short_code": None}
         output = lambda_function.lambda_handler(self.mock_event, None)
         success = re.compile(r'The instance is stopping\.')
         fail = re.compile(r'This instance is already stopped\.')
@@ -103,7 +103,7 @@ class TestReadFunctions(unittest.TestCase):
 
     def test_start_instance(self):
         self.mock_event["currentIntent"]["name"] = "StartInstance"
-        self.mock_event["currentIntent"]["slots"] = {"instance_id": "i-08ef48460a83ae3cf"}
+        self.mock_event["currentIntent"]["slots"] = {"instance_id": "i-08ef48460a83ae3cf", "short_code": None}
         output = lambda_function.lambda_handler(self.mock_event, None)
         success = re.compile(r'The instance is starting\.')
         fail = re.compile(r'This instance is already running\.')
@@ -113,6 +113,18 @@ class TestReadFunctions(unittest.TestCase):
             match = True
         else:
             match = None
+        self.assertIsNotNone(match)
+
+    def test_discovery(self):
+        self.mock_event["currentIntent"]["name"] = "Discovery"
+        output = lambda_function.lambda_handler(self.mock_event, None)
+        regex = re.compile(r'''I can:
+            Tell you the number of running instances
+            Tell you the current state of all your instances
+            Tell you the reason for an instance being stopped
+            Start a stopped instance
+            Stop a running instance''')
+        match = regex.match(output["dialogAction"]["message"]["content"])
         self.assertIsNotNone(match)
 
 if __name__ == '__main__':
