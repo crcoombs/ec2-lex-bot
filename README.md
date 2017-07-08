@@ -1,5 +1,5 @@
 # ec2-lex-bot
-An Amazon Lex chatbot for issuing basic EC2 commands.
+An Amazon Lex chatbot for issuing basic EC2 commands. To get started, say "What can you do?"
 
 # Available Functions
 * List the number of running instances
