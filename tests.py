@@ -115,6 +115,20 @@ class TestReadFunctions(unittest.TestCase):
             match = None
         self.assertIsNotNone(match)
 
+    def test_get_address(self):
+            self.mock_event["currentIntent"]["name"] = "GetAddress"
+            self.mock_event["currentIntent"]["slots"] = {"instance_id": "i-08ef48460a83ae3cf", "short_code": None}
+            output = lambda_function.lambda_handler(self.mock_event, None)
+            success = re.compile(r'The IP address is (\d{1,3}\.){3}\d{1,3}, the hostname is ec2-(\d{1,3}-){3}\d{1,3}\.compute-1\.amazonaws\.com\.')
+            fail = re.compile(r'This instance is stopped, so it doesn\'t have an IP address\.')
+            success_match = success.match(output["dialogAction"]["message"]["content"])
+            fail_match = fail.match(output["dialogAction"]["message"]["content"])
+            if success_match is not None or fail_match is not None:
+                match = True
+            else:
+                match = None
+            self.assertIsNotNone(match)
+
     def test_discovery(self):
         self.mock_event["currentIntent"]["name"] = "Discovery"
         output = lambda_function.lambda_handler(self.mock_event, None)
@@ -122,10 +136,13 @@ class TestReadFunctions(unittest.TestCase):
              \* Tell you the number of running instances
              \* Tell you the current state of all your instances
              \* Tell you the reason for an instance being stopped
+             \* Tell you the hostname and IP address of an instance
              \* Start a stopped instance
              \* Stop a running instance''')
         match = regex.match(output["dialogAction"]["message"]["content"])
         self.assertIsNotNone(match)
+
+
 
 if __name__ == '__main__':
     unittest.main()

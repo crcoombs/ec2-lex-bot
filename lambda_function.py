@@ -153,6 +153,32 @@ def stop_instance(instance_id):
         response_data["content"] = "The instance is stopping."
     return response_data
 
+def get_address(instance_id):
+    response_data = {
+        "type": "Close",
+        "fulfillmentState": "Fulfilled",
+        "content": ''
+    }
+    instance = EC2.Instance(instance_id)
+    try:
+        if instance.state["Code"] in (0, 16):
+            address = instance.public_ip_address
+            hostname = instance.public_dns_name
+            response_data["content"] = "The IP address is {0}, the hostname is {1}.".format(address, hostname)
+            return response_data
+        elif instance.state["Code"] in (32, 64, 80):
+            response_data["content"] = "This instance is stopped, so it doesn't have an IP address."
+            return response_data
+        else:
+            response_data["content"] = "Unhanded state: {0}".format(instance.state["Code"])
+            return response_data
+    except ClientError as ex:
+        if ex.response['Error']['Code'] in ('InvalidInstanceID.NotFound', 'InvalidInstanceID.Malformed'):
+            response_data["content"] = "I'm sorry, there's no instance by that name."
+            return response_data
+        print(ex.response['Error']['Code'])
+        return None
+
 def list_functions():
     response_data = {
         "type": "Close",
@@ -163,6 +189,7 @@ def list_functions():
              * Tell you the number of running instances
              * Tell you the current state of all your instances
              * Tell you the reason for an instance being stopped
+             * Tell you the hostname and IP address of an instance
              * Start a stopped instance
              * Stop a running instance'''
     return response_data
@@ -171,7 +198,7 @@ def lambda_handler(event, context):
     response_data = {}
     print(event)
 
-    if event["currentIntent"]["name"] in ("ShutdownReason", "StartInstance", "StopInstance"):
+    if event["currentIntent"]["name"] in ("ShutdownReason", "StartInstance", "StopInstance", "GetAddress"):
         try:
             instance_id = event["currentIntent"]["slots"]["instance_id"]
             short_code = event["currentIntent"]["slots"]["short_code"]
@@ -193,6 +220,8 @@ def lambda_handler(event, context):
         response_data = start_instance(instance_id)
     elif event["currentIntent"]["name"] == "StopInstance":
         response_data = stop_instance(instance_id)
+    elif event["currentIntent"]["name"] == "GetAddress":
+        response_data = get_address(instance_id)
     elif event["currentIntent"]["name"] == "Discovery":
         response_data = list_functions()
 
