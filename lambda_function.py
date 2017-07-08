@@ -160,11 +160,11 @@ def list_functions():
         "content": ''
     }
     response_data["content"] = '''I can:
-            Tell you the number of running instances
-            Tell you the current state of all your instances
-            Tell you the reason for an instance being stopped
-            Start a stopped instance
-            Stop a running instance'''
+             * Tell you the number of running instances
+             * Tell you the current state of all your instances
+             * Tell you the reason for an instance being stopped
+             * Start a stopped instance
+             * Stop a running instance'''
     return response_data
 
 def lambda_handler(event, context):

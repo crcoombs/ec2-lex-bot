@@ -119,11 +119,11 @@ class TestReadFunctions(unittest.TestCase):
         self.mock_event["currentIntent"]["name"] = "Discovery"
         output = lambda_function.lambda_handler(self.mock_event, None)
         regex = re.compile(r'''I can:
-            Tell you the number of running instances
-            Tell you the current state of all your instances
-            Tell you the reason for an instance being stopped
-            Start a stopped instance
-            Stop a running instance''')
+             \* Tell you the number of running instances
+             \* Tell you the current state of all your instances
+             \* Tell you the reason for an instance being stopped
+             \* Start a stopped instance
+             \* Stop a running instance''')
         match = regex.match(output["dialogAction"]["message"]["content"])
         self.assertIsNotNone(match)
 
