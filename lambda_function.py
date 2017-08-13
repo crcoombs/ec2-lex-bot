@@ -1,4 +1,5 @@
 #TODO: In-OS shutdown not recognized by shutdown reason function
+#TODO: Add launch time
 import os
 from base64 import b64decode
 import boto3
@@ -86,21 +87,22 @@ def get_shutdown_reason(instance_id):
     }
     instance = EC2.Instance(instance_id)
     try:
-        transition_string = instance.state_transition_reason
+        reason = instance.state_reason['Message'].split(':')[1].strip()
+        #time_string = instance.state_transition_reason.split('(')
     except ClientError as ex:
         if ex.response['Error']['Code'] in ('InvalidInstanceID.NotFound', 'InvalidInstanceID.Malformed'):
             response_data["content"] = "I'm sorry, there's no instance by that name."
             return response_data
         print(ex.response['Error']['Code'])
         return None
-    if transition_string == '':
-        response_data["content"] = "This instance is currntly running, so there's no information."
-        return response_data
-    reason, time_string = transition_string.split('(')
-    reason = reason.strip()
-    time_string = time_string.replace(')', '')
-    date, time, zone = time_string.split()
-    response_data["content"] = "The reason for the shutdown was: {0}. It happened on {1} at {2} {3}.".format(reason, date, time, zone)
+    except KeyError:
+            response_data["content"] = "This instance is currntly running, so there's no information."
+            return response_data
+    
+    #time_string = transition_string.split('(')
+    #time_string = time_string.replace(')', '')
+    #date, time, zone = time_string.split()
+    response_data["content"] = "The reason for the shutdown was: {0}.".format(reason)
     return response_data
 
 def start_instance(instance_id):

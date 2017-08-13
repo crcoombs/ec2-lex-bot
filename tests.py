@@ -46,7 +46,7 @@ class TestReadFunctions(unittest.TestCase):
         self.mock_event["currentIntent"]["name"] = "ShutdownReason"
         self.mock_event["currentIntent"]["slots"] = {"instance_id": "i-08ef48460a83ae3cf", "short_code": None}
         output = lambda_function.lambda_handler(self.mock_event, None)
-        success = re.compile(r'The reason for the shutdown was: .*\. It happened on \d{4}-\d{2}-\d{2} at \d{2}:\d{2}:\d{2} \w{3}\.')
+        success = re.compile(r'The reason for the shutdown was: .*\.')
         fail = re.compile(r'This instance is currntly running, so there\'s no information.')
         success_match = success.match(output["dialogAction"]["message"]["content"])
         fail_match = fail.match(output["dialogAction"]["message"]["content"])
@@ -69,7 +69,7 @@ class TestReadFunctions(unittest.TestCase):
         self.mock_event["currentIntent"]["slots"] = {"instance_id": None, "short_code": "1"}
         self.mock_event["sessionAttributes"] = {"1": "i-08ef48460a83ae3cf"}
         output = lambda_function.lambda_handler(self.mock_event, None)
-        success = re.compile(r'The reason for the shutdown was: .*\. It happened on \d{4}-\d{2}-\d{2} at \d{2}:\d{2}:\d{2} \w{3}\.')
+        success = re.compile(r'The reason for the shutdown was: .*\.')
         fail = re.compile(r'This instance is currntly running, so there\'s no information.')
         success_match = success.match(output["dialogAction"]["message"]["content"])
         fail_match = fail.match(output["dialogAction"]["message"]["content"])
