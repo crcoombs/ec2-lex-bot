@@ -38,7 +38,7 @@ class TestReadFunctions(unittest.TestCase):
     def test_instance_status(self):
         self.mock_event["currentIntent"]["name"] = "InstanceStatus"
         output = lambda_function.lambda_handler(self.mock_event, None)
-        regex = re.compile(r'No\. \d: id (i-[a-f0-9]{8,}, a (Windows|Linux) instance, is currently (pending|running|shutting down|terminated|stopping|stopped)\. )+')
+        regex = re.compile(r'(No\. \d: id i-[a-f0-9]{8,}, a (Windows|Linux) instance running on a [a-z]{1,2}\d\.\d{0,2}(nano|micro|small|medium|large|xlarge), is currently (pending|running|shutting down|terminated|stopping|stopped)\. )+')
         match = regex.match(output["dialogAction"]["message"]["content"])
         self.assertIsNotNone(match)
 

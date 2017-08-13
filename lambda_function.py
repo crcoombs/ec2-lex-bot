@@ -1,3 +1,4 @@
+#TODO: In-OS shutdown not recognized by shutdown reason function
 import os
 from base64 import b64decode
 import boto3
@@ -69,7 +70,8 @@ def get_instance_status():
             platform = instance.platform.capitalize()
         else:
             platform = 'Linux'
-        status.append("No. {0}: id {1}, a {2} instance, is currently {3}. ".format(index, instance.id, platform, instance.state["Name"]))
+        instance_type = instance.instance_type
+        status.append("No. {0}: id {1}, a {2} instance running on a {3}, is currently {4}. ".format(index, instance.id, platform, instance_type, instance.state["Name"]))
     if index == 0:
         response_data["content"] = "There are no existing instances."
     else:
