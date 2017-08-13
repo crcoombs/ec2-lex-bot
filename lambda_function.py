@@ -207,10 +207,10 @@ def lambda_handler(event, context):
             if short_code:
                 instance_id = event["sessionAttributes"][short_code]
         except KeyError:
-                response_data["type"] = "Close"
-                response_data["fulfillmentState"] = "Failed"
-                response_data["content"] = "I'm sorry, that ID is invalid."
-                return generate_response(response_data)
+            response_data["type"] = "Close"
+            response_data["fulfillmentState"] = "Failed"
+            response_data["content"] = "I'm sorry, that ID is invalid."
+            return generate_response(response_data)
 
     if event["currentIntent"]["name"] == "RunningInstances":
         response_data = get_num_instances()

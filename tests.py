@@ -116,18 +116,18 @@ class TestReadFunctions(unittest.TestCase):
         self.assertIsNotNone(match)
 
     def test_get_address(self):
-            self.mock_event["currentIntent"]["name"] = "GetAddress"
-            self.mock_event["currentIntent"]["slots"] = {"instance_id": "i-08ef48460a83ae3cf", "short_code": None}
-            output = lambda_function.lambda_handler(self.mock_event, None)
-            success = re.compile(r'The IP address is (\d{1,3}\.){3}\d{1,3}, the hostname is ec2-(\d{1,3}-){3}\d{1,3}\.compute-1\.amazonaws\.com\.')
-            fail = re.compile(r'This instance is stopped, so it doesn\'t have an IP address\.')
-            success_match = success.match(output["dialogAction"]["message"]["content"])
-            fail_match = fail.match(output["dialogAction"]["message"]["content"])
-            if success_match is not None or fail_match is not None:
-                match = True
-            else:
-                match = None
-            self.assertIsNotNone(match)
+        self.mock_event["currentIntent"]["name"] = "GetAddress"
+        self.mock_event["currentIntent"]["slots"] = {"instance_id": "i-08ef48460a83ae3cf", "short_code": None}
+        output = lambda_function.lambda_handler(self.mock_event, None)
+        success = re.compile(r'The IP address is (\d{1,3}\.){3}\d{1,3}, the hostname is ec2-(\d{1,3}-){3}\d{1,3}\.compute-1\.amazonaws\.com\.')
+        fail = re.compile(r'This instance is stopped, so it doesn\'t have an IP address\.')
+        success_match = success.match(output["dialogAction"]["message"]["content"])
+        fail_match = fail.match(output["dialogAction"]["message"]["content"])
+        if success_match is not None or fail_match is not None:
+            match = True
+        else:
+            match = None
+        self.assertIsNotNone(match)
 
     def test_discovery(self):
         self.mock_event["currentIntent"]["name"] = "Discovery"
