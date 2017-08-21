@@ -1,7 +1,6 @@
-#TODO: In-OS shutdown not recognized by shutdown reason function
-#TODO: Add launch time
 import os
 from base64 import b64decode
+import datetime
 import boto3
 from botocore.exceptions import ClientError
 
@@ -88,20 +87,9 @@ def get_shutdown_reason(instance_id):
     instance = EC2.Instance(instance_id)
     try:
         reason = instance.state_reason['Message'].split(':')[1].strip()
-        #time_string = instance.state_transition_reason.split('(')
-    except ClientError as ex:
-        if ex.response['Error']['Code'] in ('InvalidInstanceID.NotFound', 'InvalidInstanceID.Malformed'):
-            response_data["content"] = "I'm sorry, there's no instance by that name."
-            return response_data
-        print(ex.response['Error']['Code'])
-        return None
     except KeyError:
-            response_data["content"] = "This instance is currntly running, so there's no information."
-            return response_data
-    
-    #time_string = transition_string.split('(')
-    #time_string = time_string.replace(')', '')
-    #date, time, zone = time_string.split()
+        response_data["content"] = "This instance is currntly running, so there's no information."
+        return response_data
     response_data["content"] = "The reason for the shutdown was: {0}.".format(reason)
     return response_data
 
@@ -112,24 +100,17 @@ def start_instance(instance_id):
         "content": ''
     }
     instance = EC2.Instance(instance_id)
-    try:
-        if instance.state["Code"] in (32, 64, 80):
-            result = instance.start()
-        elif instance.state["Code"] in (0, 16):
-            response_data["content"] = "This instance is already running."
-            return response_data
-        else:
-            response_data["content"] = "Unhanded state: {0}".format(instance.state["Code"])
-            return response_data
-    except ClientError as ex:
-        if ex.response['Error']['Code'] in ('InvalidInstanceID.NotFound', 'InvalidInstanceID.Malformed'):
-            response_data["content"] = "I'm sorry, there's no instance by that name."
-            return response_data
-        print(ex.response['Error']['Code'])
-        return None
-    if result["StartingInstances"][0]["CurrentState"]["Code"] == 0:
-        response_data["content"] = "The instance is starting."
-    return response_data
+    if instance.state["Code"] in (32, 64, 80):
+        result = instance.start()
+        if result["StartingInstances"][0]["CurrentState"]["Code"] == 0:
+            response_data["content"] = "The instance is starting."
+        return response_data
+    elif instance.state["Code"] in (0, 16):
+        response_data["content"] = "This instance is already running."
+        return response_data
+    else:
+        response_data["content"] = "Unhanded state: {0}".format(instance.state["Code"])
+        return response_data
 
 def stop_instance(instance_id):
     response_data = {
@@ -138,24 +119,17 @@ def stop_instance(instance_id):
         "content": ''
     }
     instance = EC2.Instance(instance_id)
-    try:
-        if instance.state["Code"] in (0, 16):
-            result = instance.stop()
-        elif instance.state["Code"] in (32, 64, 80):
-            response_data["content"] = "This instance is already stopped."
-            return response_data
-        else:
-            response_data["content"] = "Unhanded state: {0}".format(instance.state["Code"])
-            return response_data
-    except ClientError as ex:
-        if ex.response['Error']['Code'] in ('InvalidInstanceID.NotFound', 'InvalidInstanceID.Malformed'):
-            response_data["content"] = "I'm sorry, there's no instance by that name."
-            return response_data
-        print(ex.response['Error']['Code'])
-        return None
-    if result["StoppingInstances"][0]["CurrentState"]["Code"] == 64:
-        response_data["content"] = "The instance is stopping."
-    return response_data
+    if instance.state["Code"] in (0, 16):
+        result = instance.stop()
+        if result["StoppingInstances"][0]["CurrentState"]["Code"] == 64:
+            response_data["content"] = "The instance is stopping."
+        return response_data
+    elif instance.state["Code"] in (32, 64, 80):
+        response_data["content"] = "This instance is already stopped."
+        return response_data
+    else:
+        response_data["content"] = "Unhanded state: {0}".format(instance.state["Code"])
+        return response_data
 
 def get_address(instance_id):
     response_data = {
@@ -164,24 +138,37 @@ def get_address(instance_id):
         "content": ''
     }
     instance = EC2.Instance(instance_id)
-    try:
-        if instance.state["Code"] in (0, 16):
-            address = instance.public_ip_address
-            hostname = instance.public_dns_name
-            response_data["content"] = "The IP address is {0}, the hostname is {1}.".format(address, hostname)
-            return response_data
-        elif instance.state["Code"] in (32, 64, 80):
-            response_data["content"] = "This instance is stopped, so it doesn't have an IP address."
-            return response_data
-        else:
-            response_data["content"] = "Unhanded state: {0}".format(instance.state["Code"])
-            return response_data
-    except ClientError as ex:
-        if ex.response['Error']['Code'] in ('InvalidInstanceID.NotFound', 'InvalidInstanceID.Malformed'):
-            response_data["content"] = "I'm sorry, there's no instance by that name."
-            return response_data
-        print(ex.response['Error']['Code'])
-        return None
+    if instance.state["Code"] in (0, 16):
+        address = instance.public_ip_address
+        hostname = instance.public_dns_name
+        response_data["content"] = "The IP address is {0}, the hostname is {1}.".format(address, hostname)
+        return response_data
+    elif instance.state["Code"] in (32, 64, 80):
+        response_data["content"] = "This instance is stopped, so it doesn't have an IP address."
+        return response_data
+    else:
+        response_data["content"] = "Unhanded state: {0}".format(instance.state["Code"])
+        return response_data
+
+def get_launch_time(instance_id):
+    response_data = {
+        "type": "Close",
+        "fulfillmentState": "Fulfilled",
+        "content": ''
+    }
+    instance = EC2.Instance(instance_id)
+    launch_time = instance.launch_time
+    time_string = launch_time.strftime("%a %d %b %Y at %I:%M:%S %p %Z.")
+    response_data["content"] = "This instance was last started on {0}".format(time_string)
+    if instance.state["Code"] in (0, 16):
+        now = datetime.datetime.now(datetime.timezone.utc)
+        uptime = now - launch_time
+        days = uptime.days
+        hours = uptime.seconds // 3600
+        minutes = uptime.seconds % 3600 // 60
+        seconds = uptime.seconds % 3600 % 60
+        response_data["content"] += " It has been running for {0} days, {1} hours, {2} minutes and {3} seconds.".format(days, hours, minutes, seconds)
+    return response_data
 
 def list_functions():
     response_data = {
@@ -194,6 +181,7 @@ def list_functions():
              * Tell you the current state of all your instances
              * Tell you the reason for an instance being stopped
              * Tell you the hostname and IP address of an instance
+             * Tell you the uptime of an instance
              * Start a stopped instance
              * Stop a running instance'''
     return response_data
@@ -202,17 +190,27 @@ def lambda_handler(event, context):
     response_data = {}
     print(event)
 
-    if event["currentIntent"]["name"] in ("ShutdownReason", "StartInstance", "StopInstance", "GetAddress"):
+    id_required_intents = ("ShutdownReason", "StartInstance", "StopInstance", "GetAddress", "GetLaunchTime")
+    if event["currentIntent"]["name"] in id_required_intents:
         try:
             instance_id = event["currentIntent"]["slots"]["instance_id"]
             short_code = event["currentIntent"]["slots"]["short_code"]
             if short_code:
                 instance_id = event["sessionAttributes"][short_code]
+            test_instance = EC2.Instance(instance_id)
+            test_state = test_instance.state  #Attributes are lazy-loaded, so we need to get a value to confirm the id
         except KeyError:
             response_data["type"] = "Close"
             response_data["fulfillmentState"] = "Failed"
             response_data["content"] = "I'm sorry, that ID is invalid."
             return generate_response(response_data)
+        except ClientError as ex:
+            print(ex.response['Error']['Code'])
+            if ex.response['Error']['Code'] in ('InvalidInstanceID.NotFound', 'InvalidInstanceID.Malformed'):
+                response_data["type"] = "Close"
+                response_data["fulfillmentState"] = "Failed"
+                response_data["content"] = "I'm sorry, there's no instance by that name."
+                return generate_response(response_data)
 
     if event["currentIntent"]["name"] == "RunningInstances":
         response_data = get_num_instances()
@@ -226,6 +224,8 @@ def lambda_handler(event, context):
         response_data = stop_instance(instance_id)
     elif event["currentIntent"]["name"] == "GetAddress":
         response_data = get_address(instance_id)
+    elif event["currentIntent"]["name"] == "GetLaunchTime":
+        response_data = get_launch_time(instance_id)
     elif event["currentIntent"]["name"] == "Discovery":
         response_data = list_functions()
 

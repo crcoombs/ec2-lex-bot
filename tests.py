@@ -129,6 +129,14 @@ class TestReadFunctions(unittest.TestCase):
             match = None
         self.assertIsNotNone(match)
 
+    def test_launch_time(self):
+        self.mock_event["currentIntent"]["name"] = "GetLaunchTime"
+        self.mock_event["currentIntent"]["slots"] = {"instance_id": "i-08ef48460a83ae3cf", "short_code": None}
+        output = lambda_function.lambda_handler(self.mock_event, None)
+        regex = re.compile(r'This instance was last started on \w{3} \d{2} \w{3} \d{4} at \d{2}:\d{2}:\d{2} (AM|PM) UTC\.( It has been running for \d{1,2} days, \d{1,2} hours, \d{1,2} minutes and \d{1,2} seconds\.)?')
+        match = regex.match(output["dialogAction"]["message"]["content"])
+        self.assertIsNotNone(match)
+
     def test_discovery(self):
         self.mock_event["currentIntent"]["name"] = "Discovery"
         output = lambda_function.lambda_handler(self.mock_event, None)
@@ -137,6 +145,7 @@ class TestReadFunctions(unittest.TestCase):
              \* Tell you the current state of all your instances
              \* Tell you the reason for an instance being stopped
              \* Tell you the hostname and IP address of an instance
+             \* Tell you the uptime of an instance
              \* Start a stopped instance
              \* Stop a running instance''')
         match = regex.match(output["dialogAction"]["message"]["content"])
